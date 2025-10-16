@@ -69,6 +69,10 @@
 #include "ggml-cann.h"
 #endif
 
+#ifdef GGML_USE_AC4K
+#include "ggml-ac4k.h"
+#endif
+
 // disable C++17 deprecation warning for std::codecvt_utf8
 #if defined(__clang__)
 #    pragma clang diagnostic push
@@ -202,6 +206,9 @@ struct ggml_backend_registry {
 #ifdef GGML_USE_CPU
         register_backend(ggml_backend_cpu_reg());
 #endif
+#ifdef GGML_USE_AC4K
+        register_backend(ggml_backend_ac4k_reg());
+#endif
     }
 
     ~ggml_backend_registry() {
@@ -218,7 +225,8 @@ struct ggml_backend_registry {
         if (!reg) {
             return;
         }
-
+        GGML_LOG_DEBUG("XXXXXXXXX %s: registered backend %s (%zu devices)\n",
+            __func__, ggml_backend_reg_name(reg), ggml_backend_reg_dev_count(reg));
 #ifndef NDEBUG
         GGML_LOG_DEBUG("%s: registered backend %s (%zu devices)\n",
             __func__, ggml_backend_reg_name(reg), ggml_backend_reg_dev_count(reg));
@@ -591,6 +599,7 @@ void ggml_backend_load_all_from_path(const char * dir_path) {
     ggml_backend_load_best("opencl", silent, dir_path);
     ggml_backend_load_best("musa", silent, dir_path);
     ggml_backend_load_best("cpu", silent, dir_path);
+    ggml_backend_load_best("ac4k", silent, dir_path);
     // check the environment variable GGML_BACKEND_PATH to load an out-of-tree backend
     const char * backend_path = std::getenv("GGML_BACKEND_PATH");
     if (backend_path) {
